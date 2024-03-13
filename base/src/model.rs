@@ -7,6 +7,7 @@
 //! IronCalc is row first. A cell is referenced by (`sheet`, `row`, `column`)
 //!
 
+use bincode::config;
 use serde_json::json;
 
 use std::collections::HashMap;
@@ -1716,6 +1717,12 @@ impl Model {
                 json!({"error": "Error stringifying workbook"}).to_string()
             }
         }
+    }
+
+    /// bin
+    pub fn to_binary_str(&self) -> Vec<u8> {
+        let config = config::standard();
+        bincode::encode_to_vec(&self.workbook, config).expect("")
     }
 
     /// Returns markup representation of the given `sheet`.

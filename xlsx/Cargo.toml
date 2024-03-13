@@ -23,6 +23,7 @@ thiserror = "1.0"
 ironcalc_base = { path = "../base", version = "0.1.0" }
 itertools = "0.10.5"
 chrono = "0.4"
+bincode = "=2.0.0-rc.3"
 
 [dev-dependencies]
 uuid = { version = "1.2.2", features = ["serde", "v4"] }
@@ -34,3 +35,8 @@ path = "src/lib.rs"
 [[bin]]
 name = "test"
 path = "src/bin/test.rs"
+
+[[bin]]
+name = "bench"
+path = "src/bin/bench.rs"
+
