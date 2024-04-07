@@ -353,7 +353,14 @@ impl Model {
         let now = dt.format("%Y-%m-%dT%H:%M:%SZ").to_string();
 
         let mut views = HashMap::new();
-        views.insert(0, WorkbookView { sheet: 0 });
+        views.insert(
+            0,
+            WorkbookView {
+                sheet: 0,
+                window_width: 800,
+                window_height: 600,
+            },
+        );
 
         // String versions of the locale are added here to simplify the serialize/deserialize logic
         let workbook = Workbook {
