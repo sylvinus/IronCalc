@@ -1,6 +1,13 @@
+all:
+	cargo build --release
+	cd bindings/wasm/ && make
+	cd webapp && npm install && npm run build
+
 lint:
 	cargo fmt -- --check
-	cargo clippy --all-targets --all-features
+	# TODO: See issue #33
+	# cargo clippy --all-targets --all-features -- -D warnings -D clippy::expect_used -D clippy::unwrap_used -D clippy::panic
+	cargo clippy --all-targets --all-features -- -D warnings
 
 format:
 	cargo fmt
@@ -10,7 +17,7 @@ tests: lint
 	./target/debug/documentation
 	cmp functions.md wiki/functions.md || exit 1
 	make remove-artifacts
-	cd bindings/wasm/ && wasm-pack build --target nodejs && node tests/test.mjs
+	cd bindings/wasm/ && make tests
 
 remove-artifacts:
 	rm -f xlsx/hello-calc.xlsx
@@ -25,6 +32,7 @@ clean: remove-artifacts
 	rm -f cargo-test-*
 	rm -f base/cargo-test-*
 	rm -f xlsx/cargo-test-*
+	rm -r -f webapp/node_modules
 
 
 coverage:

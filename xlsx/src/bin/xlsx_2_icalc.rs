@@ -8,7 +8,7 @@
 
 use std::path;
 
-use ironcalc::{export::save_to_json, import::load_model_from_xlsx};
+use ironcalc::{export::save_to_icalc, import::load_model_from_xlsx};
 
 fn main() {
     let args: Vec<_> = std::env::args().collect();
@@ -22,5 +22,5 @@ fn main() {
     let base_name = file_path.file_stem().unwrap().to_str().unwrap();
     let output_file_name = &format!("{base_name}.ic");
     let model = load_model_from_xlsx(file_name, "en", "UTC").unwrap();
-    save_to_json(model.workbook, output_file_name);
+    save_to_icalc(model.workbook, output_file_name);
 }
