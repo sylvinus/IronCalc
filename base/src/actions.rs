@@ -69,21 +69,26 @@ impl Model {
         target_row: i32,
         target_column: i32,
     ) -> Result<(), String> {
-        let source_cell = self
+        if let Some(source_cell) = self
             .workbook
             .worksheet(sheet)?
             .cell(source_row, source_column)
-            .ok_or("Expected Cell to exist")?;
-        let style = source_cell.get_style();
-        // FIXME: we need some user_input getter instead of get_text
-        let formula_or_value = self
-            .get_cell_formula(sheet, source_row, source_column)?
-            .unwrap_or_else(|| source_cell.get_text(&self.workbook.shared_strings, &self.language));
-        self.set_user_input(sheet, target_row, target_column, formula_or_value);
-        self.workbook
-            .worksheet_mut(sheet)?
-            .set_cell_style(target_row, target_column, style);
-        self.cell_clear_all(sheet, source_row, source_column)?;
+        {
+            let style = source_cell.get_style();
+            // FIXME: we need some user_input getter instead of get_text
+            let formula_or_value = self
+                .get_cell_formula(sheet, source_row, source_column)?
+                .unwrap_or_else(|| {
+                    source_cell.get_text(&self.workbook.shared_strings, &self.language)
+                });
+            self.set_user_input(sheet, target_row, target_column, formula_or_value);
+            self.workbook
+                .worksheet_mut(sheet)?
+                .set_cell_style(target_row, target_column, style);
+            self.cell_clear_all(sheet, source_row, source_column)?;
+        } else {
+            self.cell_clear_all(sheet, target_row, target_column)?;
+        }
         Ok(())
     }
 
@@ -106,7 +111,7 @@ impl Model {
             return Err("Cannot add a negative number of cells :)".to_string());
         }
         // check if it is possible:
-        let dimensions = self.workbook.worksheet(sheet)?.dimension();
+        let dimensions = self.workbook.worksheet(sheet)?.get_dimension();
         let last_column = dimensions.max_column + column_count;
         if last_column > LAST_COLUMN {
             return Err(
@@ -263,7 +268,7 @@ impl Model {
             return Err("Cannot add a negative number of cells :)".to_string());
         }
         // Check if it is possible:
-        let dimensions = self.workbook.worksheet(sheet)?.dimension();
+        let dimensions = self.workbook.worksheet(sheet)?.get_dimension();
         let last_row = dimensions.max_row + row_count;
         if last_row > LAST_ROW {
             return Err(
@@ -367,13 +372,162 @@ impl Model {
             }
         }
         self.workbook.worksheets[sheet as usize].rows = new_rows;
-        self.displace_cells(
-            &(DisplaceData::Row {
-                sheet,
-                row,
-                delta: -row_count,
-            }),
-        );
+        self.displace_cells(&DisplaceData::Row {
+            sheet,
+            row,
+            delta: -row_count,
+        });
+        Ok(())
+    }
+
+    pub fn delete_cells_and_shift_left(
+        &mut self,
+        sheet: u32,
+        row: i32,
+        column: i32,
+        row_delta: i32,
+        column_delta: i32,
+    ) -> Result<(), String> {
+        let worksheet = &mut self.workbook.worksheet_mut(sheet)?;
+        let max_column = worksheet.get_dimension().max_column;
+
+        // Delete all cells in the range
+        for r in row..row + row_delta {
+            for c in column..column + column_delta {
+                self.cell_clear_all(sheet, r, c)?;
+            }
+        }
+
+        // Move all cells in the range
+        for r in row..row + row_delta {
+            for c in column + 1..max_column + 1 {
+                println!("{r}-{c}");
+                self.move_cell(sheet, r, c, r, c - column_delta)?;
+            }
+        }
+
+        // Update all formulas in the workbook
+        self.displace_cells(&DisplaceData::ShiftCellsRight {
+            sheet,
+            row,
+            column,
+            column_delta: -column_delta,
+            row_delta,
+        });
+
+        Ok(())
+    }
+
+    /// Insert cells and shift right
+    pub fn insert_cells_and_shift_right(
+        &mut self,
+        sheet: u32,
+        row: i32,
+        column: i32,
+        row_delta: i32,
+        column_delta: i32,
+    ) -> Result<(), String> {
+        let worksheet = &mut self.workbook.worksheet_mut(sheet)?;
+        let max_column = worksheet.get_dimension().max_column;
+
+        // Move all cells in the range
+        for r in row..row + row_delta {
+            for c in (column..max_column + 1).rev() {
+                self.move_cell(sheet, r, c, r, c + column_delta)?;
+            }
+        }
+
+        // Delete all cells in the range
+        for r in row..row + row_delta {
+            for c in column..column + column_delta {
+                self.cell_clear_all(sheet, r, c)?;
+            }
+        }
+
+        // Update all formulas in the workbook
+        self.displace_cells(&DisplaceData::ShiftCellsRight {
+            sheet,
+            row,
+            column,
+            column_delta,
+            row_delta,
+        });
+
+        Ok(())
+    }
+
+    /// Insert cells and shift down
+    pub fn insert_cells_and_shift_down(
+        &mut self,
+        sheet: u32,
+        row: i32,
+        column: i32,
+        row_delta: i32,
+        column_delta: i32,
+    ) -> Result<(), String> {
+        let worksheet = &mut self.workbook.worksheet_mut(sheet)?;
+        let max_row = worksheet.get_dimension().max_row;
+
+        // Move all cells in the range
+        for r in (row..row + max_row + 1).rev() {
+            for c in column..column + column_delta {
+                self.move_cell(sheet, r, c, r, c + column_delta)?;
+            }
+        }
+
+        // Delete all cells in the range
+        for r in row..row + row_delta {
+            for c in column..column + column_delta {
+                self.cell_clear_all(sheet, r, c)?;
+            }
+        }
+
+        // Update all formulas in the workbook
+        self.displace_cells(&DisplaceData::ShiftCellsDown {
+            sheet,
+            row,
+            column,
+            column_delta,
+            row_delta,
+        });
+
+        Ok(())
+    }
+
+    pub fn delete_cells_and_shift_up(
+        &mut self,
+        sheet: u32,
+        row: i32,
+        column: i32,
+        row_delta: i32,
+        column_delta: i32,
+    ) -> Result<(), String> {
+        let worksheet = &mut self.workbook.worksheet_mut(sheet)?;
+        let max_row = worksheet.get_dimension().max_row;
+
+        // Delete all cells in the range
+        for r in row..row + row_delta {
+            for c in column..column + column_delta {
+                self.cell_clear_all(sheet, r, c)?;
+            }
+        }
+
+        // Move all cells in the range
+        for r in row..max_row + 1 {
+            for c in column + 1..column + column_delta {
+                self.move_cell(sheet, r, c, r - row_delta, c)?;
+            }
+        }
+
+        // Update all formulas in the workbook
+        self.displace_cells(&DisplaceData::ShiftCellsDown {
+            sheet,
+            row,
+            column,
+            column_delta,
+            row_delta: -row_delta,
+        });
+
         Ok(())
     }
 

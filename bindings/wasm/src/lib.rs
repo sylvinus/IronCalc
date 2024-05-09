@@ -4,7 +4,7 @@ use wasm_bindgen::{
 };
 
 use ironcalc_base::{
-    expressions::{lexer::util::get_tokens as tokenizer, types::Area},
+    expressions::{lexer::marked_token::get_tokens as tokenizer, types::Area},
     types::CellType,
     UserModel as BaseModel,
 };

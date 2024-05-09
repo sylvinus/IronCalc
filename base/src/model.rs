@@ -1788,7 +1788,7 @@ impl Model {
     /// Returns markup representation of the given `sheet`.
     pub fn get_sheet_markup(&self, sheet: u32) -> Result<String, String> {
         let worksheet = self.workbook.worksheet(sheet)?;
-        let dimension = worksheet.dimension();
+        let dimension = worksheet.get_dimension();
 
         let mut rows = Vec::new();
 

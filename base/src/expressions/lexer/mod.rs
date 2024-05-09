@@ -1,3 +1,5 @@
+#![deny(missing_docs)]
+
 //! A tokenizer for spreadsheet formulas.
 //!
 //! This is meant to feed a formula parser.
@@ -7,8 +9,10 @@
 //! It supports two working modes:
 //!
 //! 1. A1 or display mode
+//!
 //!    This is for user formulas. References are like `D4`, `D$4` or `F5:T10`
 //! 2. R1C1, internal or runtime mode
+//!
 //!    A reference like R1C1 refers to $A$1 and R3C4 to $D$4
 //!    R[2]C[5] refers to a cell two rows below and five columns to the right
 //!    It uses the 'en' locale and language.
@@ -55,7 +59,8 @@ use super::token::{Error, TokenType};
 use super::types::*;
 use super::utils;
 
-pub mod util;
+/// Returns an iterator over tokens together with their position in the byte string.
+pub mod marked_token;
 
 #[cfg(test)]
 mod test;
@@ -63,17 +68,28 @@ mod test;
 mod ranges;
 mod structured_references;
 
+/// This is the TokenType we return if we cannot recognize a token
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct LexerError {
+    /// Position of the beginning of the token in the byte string.
     pub position: usize,
+    /// Message describing what we think the error is.
     pub message: String,
 }
 
 pub(super) type Result<T> = std::result::Result<T, LexerError>;
 
+/// Whether we try to parse formulas in A1 mode or in the internal R1C1 mode
 #[derive(Clone, PartialEq, Eq)]
 pub enum LexerMode {
+    /// Cell references are written `=S34`. This is the display mode
     A1,
+    ///    R1C1, internal or runtime mode
+    ///
+    ///    A reference like R1C1 refers to $A$1 and R3C4 to $D$4
+    ///    R[2]C[5] refers to a cell two rows below and five columns to the right
+    ///    It uses the 'en' locale and language.
+    ///    This is used internally at runtime.
     R1C1,
 }
 

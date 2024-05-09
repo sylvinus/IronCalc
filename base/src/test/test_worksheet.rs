@@ -10,7 +10,7 @@ use crate::{
 fn test_worksheet_dimension_empty_sheet() {
     let model = new_empty_model();
     assert_eq!(
-        model.workbook.worksheet(0).unwrap().dimension(),
+        model.workbook.worksheet(0).unwrap().get_dimension(),
         WorksheetDimension {
             min_row: 1,
             min_column: 1,
@@ -25,7 +25,7 @@ fn test_worksheet_dimension_single_cell() {
     let mut model = new_empty_model();
     model._set("W11", "1");
     assert_eq!(
-        model.workbook.worksheet(0).unwrap().dimension(),
+        model.workbook.worksheet(0).unwrap().get_dimension(),
         WorksheetDimension {
             min_row: 11,
             min_column: 23,
@@ -41,7 +41,7 @@ fn test_worksheet_dimension_single_cell_set_empty() {
     model._set("W11", "1");
     model.cell_clear_contents(0, 11, 23).unwrap();
     assert_eq!(
-        model.workbook.worksheet(0).unwrap().dimension(),
+        model.workbook.worksheet(0).unwrap().get_dimension(),
         WorksheetDimension {
             min_row: 11,
             min_column: 23,
@@ -57,7 +57,7 @@ fn test_worksheet_dimension_single_cell_deleted() {
     model._set("W11", "1");
     model.cell_clear_all(0, 11, 23).unwrap();
     assert_eq!(
-        model.workbook.worksheet(0).unwrap().dimension(),
+        model.workbook.worksheet(0).unwrap().get_dimension(),
         WorksheetDimension {
             min_row: 1,
             min_column: 1,
@@ -77,7 +77,7 @@ fn test_worksheet_dimension_multiple_cells() {
     model._set("B19", "1");
     model.cell_clear_all(0, 11, 23).unwrap();
     assert_eq!(
-        model.workbook.worksheet(0).unwrap().dimension(),
+        model.workbook.worksheet(0).unwrap().get_dimension(),
         WorksheetDimension {
             min_row: 11,
             min_column: 2,
@@ -91,7 +91,7 @@ fn test_worksheet_dimension_multiple_cells() {
 fn test_worksheet_dimension_progressive() {
     let mut model = new_empty_model();
     assert_eq!(
-        model.workbook.worksheet(0).unwrap().dimension(),
+        model.workbook.worksheet(0).unwrap().get_dimension(),
         WorksheetDimension {
             min_row: 1,
             min_column: 1,
@@ -102,7 +102,7 @@ fn test_worksheet_dimension_progressive() {
 
     model.set_user_input(0, 30, 50, "Hello World".to_string());
     assert_eq!(
-        model.workbook.worksheet(0).unwrap().dimension(),
+        model.workbook.worksheet(0).unwrap().get_dimension(),
         WorksheetDimension {
             min_row: 30,
             min_column: 50,
@@ -113,7 +113,7 @@ fn test_worksheet_dimension_progressive() {
 
     model.set_user_input(0, 10, 15, "Hello World".to_string());
     assert_eq!(
-        model.workbook.worksheet(0).unwrap().dimension(),
+        model.workbook.worksheet(0).unwrap().get_dimension(),
         WorksheetDimension {
             min_row: 10,
             min_column: 15,
@@ -124,7 +124,7 @@ fn test_worksheet_dimension_progressive() {
 
     model.set_user_input(0, 5, 25, "Hello World".to_string());
     assert_eq!(
-        model.workbook.worksheet(0).unwrap().dimension(),
+        model.workbook.worksheet(0).unwrap().get_dimension(),
         WorksheetDimension {
             min_row: 5,
             min_column: 15,
@@ -135,7 +135,7 @@ fn test_worksheet_dimension_progressive() {
 
     model.set_user_input(0, 10, 250, "Hello World".to_string());
     assert_eq!(
-        model.workbook.worksheet(0).unwrap().dimension(),
+        model.workbook.worksheet(0).unwrap().get_dimension(),
         WorksheetDimension {
             min_row: 5,
             min_column: 15,

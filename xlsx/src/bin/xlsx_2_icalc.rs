@@ -1,10 +1,6 @@
-//! Tests an Excel xlsx file.
-//! Returns a list of differences in json format.
-//! Saves an IronCalc version
-//! This is primary for QA internal testing and will be superseded by an official
-//! IronCalc CLI.
+//! Converts an xlsx file into the binary IronCalc format
 //!
-//! Usage: test file.xlsx
+//! Usage: xlsx_2_icalc file.xlsx
 
 use std::path;
 
@@ -15,7 +11,6 @@ fn main() {
     if args.len() != 2 {
         panic!("Usage: {} <file.xlsx>", args[0]);
     }
-    // first test the file
     let file_name = &args[1];
 
     let file_path = path::Path::new(file_name);

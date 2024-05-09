@@ -1,31 +1,29 @@
-/*!
-# GRAMAR
-
-<pre class="rust">
-opComp   => '=' | '<' | '>' | '<=' } '>=' | '<>'
-opFactor => '*' | '/'
-unaryOp  => '-' | '+'
-
-expr    => concat (opComp concat)*
-concat  => term ('&' term)*
-term    => factor (opFactor factor)*
-factor  => prod (opProd prod)*
-prod    => power ('^' power)*
-power   => (unaryOp)* range '%'*
-range   => primary (':' primary)?
-primary => '(' expr ')'
-        => number
-        => function '(' f_args ')'
-        => name
-        => string
-        => '{' a_args '}'
-        => bool
-        => bool()
-        => error
-
-f_args  => e (',' e)*
-</pre>
-*/
+//! # GRAMMAR
+//!
+//! <pre class="rust">
+//! opComp   => '=' | '<' | '>' | '<=' } '>=' | '<>'
+//! opFactor => '*' | '/'
+//! unaryOp  => '-' | '+'
+//!
+//! expr    => concat (opComp concat)*
+//! concat  => term ('&' term)*
+//! term    => factor (opFactor factor)*
+//! factor  => prod (opProd prod)*
+//! prod    => power ('^' power)*
+//! power   => (unaryOp)* range '%'*
+//! range   => primary (':' primary)?
+//! primary => '(' expr ')'
+//!         => number
+//!         => function '(' f_args ')'
+//!         => name
+//!         => string
+//!         => '{' a_args '}'
+//!         => bool
+//!         => bool()
+//!         => error
+//!
+//! f_args  => e (',' e)*
+//! </pre>
 
 use std::collections::HashMap;
 
@@ -44,20 +42,14 @@ use super::utils::number_to_column;
 
 use token::OpCompare;
 
-pub mod move_formula;
+pub(crate) mod move_formula;
+pub(crate) mod walk;
+
+/// Produces a string representation of a formula from the AST.
 pub mod stringify;
-pub mod walk;
 
 #[cfg(test)]
 mod test;
-
-#[cfg(test)]
-mod test_ranges;
-
-#[cfg(test)]
-mod test_move_formula;
-#[cfg(test)]
-mod test_tables;
 
 pub(crate) fn parse_range(formula: &str) -> Result<(i32, i32, i32, i32), String> {
     let mut lexer = lexer::Lexer::new(

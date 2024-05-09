@@ -91,6 +91,36 @@ enum Diff {
         column: i32,
         old_data: Box<ColumnData>,
     },
+    InsertCellsShiftRight {
+        sheet: u32,
+        row: i32,
+        column: i32,
+        row_delta: i32,
+        column_delta: i32,
+    },
+    InsertCellsShiftDown {
+        sheet: u32,
+        row: i32,
+        column: i32,
+        row_delta: i32,
+        column_delta: i32,
+    },
+    DeleteCellsShiftLeft {
+        sheet: u32,
+        row: i32,
+        column: i32,
+        row_delta: i32,
+        column_delta: i32,
+        old_data: Vec<Vec<Option<Cell>>>,
+    },
+    DeleteCellsShiftUp {
+        sheet: u32,
+        row: i32,
+        column: i32,
+        row_delta: i32,
+        column_delta: i32,
+        old_data: Vec<Vec<Option<Cell>>>,
+    },
     SetFrozenRowsCount {
         sheet: u32,
         new_value: i32,
@@ -713,6 +743,123 @@ impl UserModel {
         self.model.delete_columns(sheet, column, 1)
     }
 
+    /// Insert cells in the area pushing the existing ones to the right
+    ///
+    /// See also:
+    /// * [Model::insert_cells_and_shift_right]
+    pub fn insert_cells_and_shift_right(
+        &mut self,
+        sheet: u32,
+        row: i32,
+        column: i32,
+        row_delta: i32,
+        column_delta: i32,
+    ) -> Result<(), String> {
+        let diff_list = vec![Diff::InsertCellsShiftRight {
+            sheet,
+            row,
+            column,
+            row_delta,
+            column_delta,
+        }];
+        self.push_diff_list(diff_list);
+        self.model
+            .insert_cells_and_shift_right(sheet, row, column, row_delta, column_delta)?;
+        self.model.evaluate();
+        Ok(())
+    }
+
+    /// Insert cells in the area pushing the existing ones down
+    pub fn insert_cells_and_shift_down(
+        &mut self,
+        sheet: u32,
+        row: i32,
+        column: i32,
+        row_delta: i32,
+        column_delta: i32,
+    ) -> Result<(), String> {
+        let diff_list = vec![Diff::InsertCellsShiftDown {
+            sheet,
+            row,
+            column,
+            row_delta,
+            column_delta,
+        }];
+        self.push_diff_list(diff_list);
+        self.model
+            .insert_cells_and_shift_down(sheet, row, column, row_delta, column_delta)?;
+        self.model.evaluate();
+        Ok(())
+    }
+
+    /// Delete cells in the specified area and then shift cells left to fill the gap.
+    pub fn delete_cells_and_shift_left(
+        &mut self,
+        sheet: u32,
+        row: i32,
+        column: i32,
+        row_delta: i32,
+        column_delta: i32,
+    ) -> Result<(), String> {
+        let mut old_data = Vec::new();
+        let worksheet = self.model.workbook.worksheet(sheet)?;
+        for r in row..row + row_delta {
+            let mut row_data = Vec::new();
+            for c in column..column + column_delta {
+                let cell = worksheet.cell(r, c);
+                row_data.push(cell.cloned());
+            }
+            old_data.push(row_data);
+        }
+        let diff_list = vec![Diff::DeleteCellsShiftLeft {
+            sheet,
+            row,
+            column,
+            row_delta,
+            column_delta,
+            old_data,
+        }];
+        self.push_diff_list(diff_list);
+        self.model
+            .delete_cells_and_shift_left(sheet, row, column, row_delta, column_delta)?;
+        self.model.evaluate();
+        Ok(())
+    }
+
+    /// Delete cells in the specified area and then shift cells upward to fill the gap.
+    pub fn delete_cells_and_shift_up(
+        &mut self,
+        sheet: u32,
+        row: i32,
+        column: i32,
+        row_delta: i32,
+        column_delta: i32,
+    ) -> Result<(), String> {
+        let mut old_data = Vec::new();
+        let worksheet = self.model.workbook.worksheet(sheet)?;
+        for r in row..row + row_delta {
+            let mut row_data = Vec::new();
+            for c in column..column + column_delta {
+                let cell = worksheet.cell(r, c);
+                row_data.push(cell.cloned());
+            }
+            old_data.push(row_data);
+        }
+        let diff_list = vec![Diff::DeleteCellsShiftUp {
+            sheet,
+            row,
+            column,
+            row_delta,
+            column_delta,
+            old_data,
+        }];
+        self.push_diff_list(diff_list);
+        self.model
+            .delete_cells_and_shift_up(sheet, row, column, row_delta, column_delta)?;
+        self.model.evaluate();
+        Ok(())
+    }
+
     /// Sets the width of a column
     ///
     /// See also:
@@ -1098,6 +1245,94 @@ impl UserModel {
                 } => {
                     self.model.set_sheet_color(*index, old_value)?;
                 }
+                Diff::InsertCellsShiftRight {
+                    sheet,
+                    row,
+                    column,
+                    row_delta,
+                    column_delta,
+                } => {
+                    needs_evaluation = true;
+                    self.model.delete_cells_and_shift_left(
+                        *sheet,
+                        *row,
+                        *column,
+                        *row_delta,
+                        *column_delta,
+                    )?;
+                }
+                Diff::InsertCellsShiftDown {
+                    sheet,
+                    row,
+                    column,
+                    row_delta,
+                    column_delta,
+                } => {
+                    needs_evaluation = true;
+                    self.model.delete_cells_and_shift_up(
+                        *sheet,
+                        *row,
+                        *column,
+                        *row_delta,
+                        *column_delta,
+                    )?;
+                }
+                Diff::DeleteCellsShiftLeft {
+                    sheet,
+                    row,
+                    column,
+                    row_delta,
+                    column_delta,
+                    old_data,
+                } => {
+                    needs_evaluation = true;
+                    // Sets old data
+                    let worksheet = self.model.workbook.worksheet_mut(*sheet)?;
+                    for r in *row..*row + *row_delta {
+                        for c in *column..*column + *column_delta {
+                            if let Some(cell) = &old_data[r as usize][c as usize] {
+                                worksheet.update_cell(r, c, cell.clone());
+                            } else {
+                                worksheet.cell_clear_contents(r, c);
+                            }
+                        }
+                    }
+                    self.model.insert_cells_and_shift_right(
+                        *sheet,
+                        *row,
+                        *column,
+                        *row_delta,
+                        *column_delta,
+                    )?;
+                }
+                Diff::DeleteCellsShiftUp {
+                    sheet,
+                    row,
+                    column,
+                    row_delta,
+                    column_delta,
+                    old_data,
+                } => {
+                    needs_evaluation = true;
+                    // Sets old data
+                    let worksheet = self.model.workbook.worksheet_mut(*sheet)?;
+                    for r in *row..*row + *row_delta {
+                        for c in *column..*column + *column_delta {
+                            if let Some(cell) = &old_data[r as usize][c as usize] {
+                                worksheet.update_cell(r, c, cell.clone());
+                            } else {
+                                worksheet.cell_clear_contents(r, c);
+                            }
+                        }
+                    }
+                    self.model.insert_cells_and_shift_down(
+                        *sheet,
+                        *row,
+                        *column,
+                        *row_delta,
+                        *column_delta,
+                    )?;
+                }
             }
         }
         if needs_evaluation {
@@ -1217,6 +1452,72 @@ impl UserModel {
                     new_value,
                 } => {
                     self.model.set_sheet_color(*index, new_value)?;
+                }
+                Diff::InsertCellsShiftRight {
+                    sheet,
+                    row,
+                    column,
+                    row_delta,
+                    column_delta,
+                } => {
+                    self.model.insert_cells_and_shift_right(
+                        *sheet,
+                        *row,
+                        *column,
+                        *row_delta,
+                        *column_delta,
+                    )?;
+                    needs_evaluation = true;
+                }
+                Diff::InsertCellsShiftDown {
+                    sheet,
+                    row,
+                    column,
+                    row_delta,
+                    column_delta,
+                } => {
+                    self.model.insert_cells_and_shift_down(
+                        *sheet,
+                        *row,
+                        *column,
+                        *row_delta,
+                        *column_delta,
+                    )?;
+                    needs_evaluation = true;
+                }
+                Diff::DeleteCellsShiftLeft {
+                    sheet,
+                    row,
+                    column,
+                    row_delta,
+                    column_delta,
+                    old_data: _,
+                } => {
+                    self.model.delete_cells_and_shift_left(
+                        *sheet,
+                        *row,
+                        *column,
+                        *row_delta,
+                        *column_delta,
+                    )?;
+                    needs_evaluation = true;
+                }
+                Diff::DeleteCellsShiftUp {
+                    sheet,
+                    row,
+                    column,
+                    row_delta,
+                    column_delta,
+                    old_data: _,
+                } => {
+                    self.model.delete_cells_and_shift_up(
+                        *sheet,
+                        *row,
+                        *column,
+                        *row_delta,
+                        *column_delta,
+                    )?;
+                    needs_evaluation = true;
                 }
             }
         }

@@ -1,5 +1,5 @@
 use crate::expressions::{
-    lexer::util::get_tokens,
+    lexer::marked_token::{get_tokens, MarkedToken},
     token::{OpCompare, OpSum, TokenType},
 };
 
@@ -20,6 +20,29 @@ fn test_get_tokens() {
     let l = t.get(2).expect("expected token");
     assert_eq!(l.start, 3);
     assert_eq!(l.end, 10);
+}
+
+#[test]
+fn chinese_characters() {
+    let formula = "\"你好\" & \"世界！\"";
+    let marked_tokens = get_tokens(formula);
+    assert_eq!(marked_tokens.len(), 3);
+    let first_t = MarkedToken {
+        token: TokenType::String("你好".to_string()),
+        start: 0,
+        end: 4,
+    };
+    let second_t = MarkedToken {
+        token: TokenType::And,
+        start: 4,
+        end: 6,
+    };
+    let third_t = MarkedToken {
+        token: TokenType::String("世界！".to_string()),
+        start: 6,
+        end: 12,
+    };
+    assert_eq!(marked_tokens, vec![first_t, second_t, third_t]);
 }
 
 #[test]

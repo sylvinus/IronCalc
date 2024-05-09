@@ -255,7 +255,7 @@ impl Model {
                                 .workbook
                                 .worksheet(left.sheet)
                                 .expect("Sheet expected during evaluation.")
-                                .dimension()
+                                .get_dimension()
                                 .max_row;
                         }
                         if column1 == 1 && column2 == LAST_COLUMN {
@@ -263,7 +263,7 @@ impl Model {
                                 .workbook
                                 .worksheet(left.sheet)
                                 .expect("Sheet expected during evaluation.")
-                                .dimension()
+                                .get_dimension()
                                 .max_column;
                         }
                         let left = CellReferenceIndex {

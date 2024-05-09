@@ -1,3 +1,5 @@
+#![deny(missing_docs)]
+
 use serde::{Deserialize, Serialize};
 
 use crate::expressions::token;
@@ -9,8 +11,11 @@ use super::{Lexer, LexerMode};
 /// A MarkedToken is a token together with its position on a formula
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct MarkedToken {
+    /// Token type (see [token::TokenType])
     pub token: token::TokenType,
+    /// Position of the start of the token (in bytes)
     pub start: i32,
+    /// Position of the end of the token (in bytes)
     pub end: i32,
 }
 
@@ -19,7 +24,7 @@ pub struct MarkedToken {
 /// # Examples
 /// ```
 /// use ironcalc_base::expressions::{
-///      lexer::util::{get_tokens, MarkedToken},
+///      lexer::marked_token::{get_tokens, MarkedToken},
 ///      token::{OpSum, TokenType},
 /// };
 ///

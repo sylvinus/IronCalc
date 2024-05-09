@@ -394,7 +394,7 @@ impl Worksheet {
     }
 
     /// Calculates dimension of the sheet. This function isn't cheap to calculate.
-    pub fn dimension(&self) -> WorksheetDimension {
+    pub fn get_dimension(&self) -> WorksheetDimension {
         // FIXME: It's probably better to just track the size as operations happen.
         if self.sheet_data.is_empty() {
             return WorksheetDimension {

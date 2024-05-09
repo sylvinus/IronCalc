@@ -3,7 +3,7 @@ use std::fmt;
 use crate::{
     calc_result::CalcResult,
     expressions::{
-        lexer::util::get_tokens,
+        lexer::marked_token::get_tokens,
         parser::Node,
         token::{Error, OpSum, TokenType},
         types::CellReferenceIndex,

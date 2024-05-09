@@ -1,43 +1,75 @@
+#![deny(missing_docs)]
+
 use super::{super::utils::quote_name, Node, Reference};
 use crate::constants::{LAST_COLUMN, LAST_ROW};
 use crate::expressions::token::OpUnary;
 use crate::{expressions::types::CellReferenceRC, number_format::to_excel_precision_str};
 
+/// Displaced data
 pub enum DisplaceData {
+    /// Displaces columns (inserting or deleting columns)
     Column {
+        /// Sheet in which the displace data applies
         sheet: u32,
+        /// Column from which the data is displaced
         column: i32,
+        /// Number of columns displaced (might be negative, e.g. when deleting columns)
         delta: i32,
     },
+    /// Displaces rows (Inserting or deleting rows)
     Row {
+        /// Sheet in which the displace data applies
         sheet: u32,
+        /// Row from which the data is displaced
         row: i32,
+        /// Number of rows displaced (might be negative, e.g. when deleting rows)
         delta: i32,
     },
-    CellHorizontal {
+    /// Displaces cells horizontally
+    ShiftCellsRight {
+        /// Sheet in which the displace data applies
         sheet: u32,
+        /// Row of the to left corner
         row: i32,
+        /// Column of the top left corner
         column: i32,
-        delta: i32,
+        /// Number of rows to be displaced
+        row_delta: i32,
+        /// Number of columns to be displaced (might be negative)
+        column_delta: i32,
     },
-    CellVertical {
+    /// Displaces cells vertically
+    ShiftCellsDown {
+        /// Sheet in which the displace data applies
         sheet: u32,
+        /// Row of the to left corner
         row: i32,
+        /// Column of the top left corner
         column: i32,
-        delta: i32,
+        /// Number of rows displaced (might be negative)
+        row_delta: i32,
+        /// Number of columns to be displaced
+        column_delta: i32,
     },
+    /// Displaces data due to a column move from column to column + delta
     ColumnMove {
+        /// Sheet in which the displace data applies
         sheet: u32,
+        /// Column that is moved
         column: i32,
+        /// The position of the new column is column + delta (might be negative)
         delta: i32,
     },
+    /// Doesn't do any cell displacement
     None,
 }
 
+/// Stringifies the AST formula in its internal R1C1 format
 pub fn to_rc_format(node: &Node) -> String {
     stringify(node, None, &DisplaceData::None, false)
 }
 
+/// Stringifies the formula applying the _displace_data_.
 pub fn to_string_displaced(
     node: &Node,
     context: &CellReferenceRC,
@@ -46,10 +78,12 @@ pub fn to_string_displaced(
     stringify(node, Some(context), displace_data, false)
 }
 
+/// Stringifies a formula from the AST
 pub fn to_string(node: &Node, context: &CellReferenceRC) -> String {
     stringify(node, Some(context), &DisplaceData::None, false)
 }
 
+/// Stringifies the formula for Excel compatibility
 pub fn to_excel_string(node: &Node, context: &CellReferenceRC) -> String {
     stringify(node, Some(context), &DisplaceData::None, true)
 }
@@ -116,41 +150,49 @@ pub(crate) fn stringify_reference(
                         }
                     }
                 }
-                DisplaceData::CellHorizontal {
+                DisplaceData::ShiftCellsRight {
                     sheet,
                     row: displace_row,
                     column: displace_column,
-                    delta,
+                    column_delta,
+                    row_delta,
                 } => {
-                    if sheet_index == *sheet && displace_row == &row {
-                        if *delta < 0 {
+                    if sheet_index == *sheet
+                        && displace_row >= &row
+                        && *displace_row < row + *row_delta
+                    {
+                        if *column_delta < 0 {
                             if &column >= displace_column {
-                                if column < displace_column - *delta {
+                                if column < displace_column - *column_delta {
                                     return "#REF!".to_string();
                                 }
-                                column += *delta;
+                                column += *column_delta;
                             }
                         } else if &column >= displace_column {
-                            column += *delta;
+                            column += *column_delta;
                         }
                     }
                 }
-                DisplaceData::CellVertical {
+                DisplaceData::ShiftCellsDown {
                     sheet,
                     row: displace_row,
                     column: displace_column,
-                    delta,
+                    row_delta,
+                    column_delta,
                 } => {
-                    if sheet_index == *sheet && displace_column == &column {
-                        if *delta < 0 {
+                    if sheet_index == *sheet
+                        && displace_column >= &column
+                        && *displace_column < column + *column_delta
+                    {
+                        if *row_delta < 0 {
                             if &row >= displace_row {
-                                if row < displace_row - *delta {
+                                if row < displace_row - *row_delta {
                                     return "#REF!".to_string();
                                 }
-                                row += *delta;
+                                row += *row_delta;
                             }
                         } else if &row >= displace_row {
-                            row += *delta;
+                            row += *row_delta;
                         }
                     }
                 }

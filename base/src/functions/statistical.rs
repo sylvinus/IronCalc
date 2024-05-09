@@ -385,7 +385,7 @@ impl Model {
             .workbook
             .worksheet(first_range.left.sheet)
             .expect("Sheet expected during evaluation.")
-            .dimension();
+            .get_dimension();
         let max_row = dimension.max_row;
         let max_column = dimension.max_column;
 
@@ -530,7 +530,7 @@ impl Model {
                 .workbook
                 .worksheet(sum_range.left.sheet)
                 .expect("Sheet expected during evaluation.")
-                .dimension()
+                .get_dimension()
                 .max_row;
         }
         if left_column == 1 && right_column == LAST_COLUMN {
@@ -538,7 +538,7 @@ impl Model {
                 .workbook
                 .worksheet(sum_range.left.sheet)
                 .expect("Sheet expected during evaluation.")
-                .dimension()
+                .get_dimension()
                 .max_column;
         }
 

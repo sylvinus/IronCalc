@@ -1,17 +1,12 @@
 use std::collections::HashMap;
 
 use crate::expressions::lexer::LexerMode;
-use crate::expressions::parser::stringify::DisplaceData;
-
-use super::super::types::CellReferenceRC;
-use super::Parser;
-use super::{
-    super::parser::{
-        stringify::{to_rc_format, to_string},
-        Node,
-    },
-    stringify::to_string_displaced,
+use crate::expressions::parser::stringify::{to_string_displaced, DisplaceData};
+use crate::expressions::parser::{
+    stringify::{to_rc_format, to_string},
+    Node, Parser,
 };
+use crate::expressions::types::CellReferenceRC;
 
 struct Formula<'a> {
     initial: &'a str,

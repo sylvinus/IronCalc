@@ -108,7 +108,7 @@ pub fn save_xlsx_to_writer<W: Write + Seek>(model: &Model, writer: W) -> Result<
             .workbook
             .worksheet(sheet_index as u32)
             .unwrap()
-            .dimension();
+            .get_dimension();
         let column_min_str = number_to_column(dimension.min_column).unwrap();
         let column_max_str = number_to_column(dimension.max_column).unwrap();
         let min_row = dimension.min_row;
